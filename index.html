@@ -308,9 +308,8 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
     </div>
     <div class="rowform">
       <div class="grow"><label for="evRep">Si ripete</label><select id="evRep" name="evRep"><option value="none">Mai</option><option value="year">Ogni anno</option><option value="month">Ogni mese</option><option value="week">Ogni settimana</option></select></div>
-      <div class="grow"><label for="evAlarm">Avviso nel calendario</label><select id="evAlarm" name="evAlarm"><option value="">Nessuno</option><option value="0">All’ora dell’evento</option><option value="15">15 minuti prima</option><option value="60">1 ora prima</option><option value="1440">1 giorno prima</option></select></div>
     </div>
-    <p class="muted small">L’avviso vale per il calendario del telefono: lo si attiva col pulsante «Calendario» accanto all’appuntamento.</p>
+    <p class="muted small">Per ricevere un avviso tocca «Calendario» accanto all’appuntamento: la notifica la imposti in Google Calendar.</p>
     <div class="actions"><button type="button" class="btn danger" data-act="del-event-dlg" id="evDel" hidden>Elimina</button><button type="button" class="btn ghost" data-close>Annulla</button><button type="button" class="btn primary" data-ok>Salva</button></div>
   </form>
 </dialog>
@@ -318,10 +317,9 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 <dialog id="dlgCal" aria-labelledby="calH">
   <h2 id="calH">Nel calendario del telefono</h2>
   <p id="calMsg"></p>
-  <p class="muted small">Così il telefono ti avvisa anche con Lucerna chiusa. Con Google Calendar l’avviso lo imposti lì; il file .ics contiene già quello che hai scelto.</p>
+  <p class="muted small">Così il telefono ti avvisa anche con Lucerna chiusa: la notifica la imposti in Google Calendar.</p>
   <div class="actions stack">
     <a class="btn primary block" id="calGoogle" target="_blank" rel="noopener">Apri Google Calendar</a>
-    <button type="button" class="btn block" data-act="ics">Scarica file .ics</button>
     <button type="button" class="btn ghost block" data-close>Chiudi</button>
   </div>
 </dialog>
@@ -411,6 +409,7 @@ function save() {
   catch (e) { storageOK = false; $('#warn').hidden = false; }
 }
 let S = load();
+S.tab = 'oggi';   // all'apertura si riparte sempre dalla schermata Oggi
 S.plan = S.plan.filter(p => daysBetween(parseYMD(p.date), new Date()) <= 14);
 
 /* ---------- dati derivati ---------- */
@@ -811,10 +810,10 @@ function openEvent(id, date) {
   $('#frmEvent').dataset.id = id || '';
   $('#evTitleH').textContent = ev ? 'Modifica appuntamento' : 'Nuovo appuntamento';
   f.evTitle.value = ev ? ev.title : ''; f.evDate.value = ev ? ev.date : (date || ymd(new Date())); f.evTime.value = ev ? ev.time || '' : '';
-  f.evRep.value = ev ? ev.rep || 'none' : 'none'; f.evAlarm.value = ev ? ev.alarm || '' : '';
+  f.evRep.value = ev ? ev.rep || 'none' : 'none';
   $('#evDel').hidden = !ev; $('#dlgEvent').showModal();
 }
-// Passaggio al calendario del telefono: link precompilato per Google Calendar e file .ics (con avviso, se scelto).
+// Passaggio al calendario del telefono: link precompilato per Google Calendar.
 let calObj = null;
 const compact = s => s.replace(/-/g, '');
 function endOf(o) {
@@ -829,20 +828,6 @@ function googleUrl(o) {
   const q = new URLSearchParams({ action: 'TEMPLATE', text: o.title, dates: startOf(o) + '/' + endOf(o), details: 'Aggiunto da Lucerna' });
   if (FREQ[o.rep]) q.set('recur', 'RRULE:FREQ=' + FREQ[o.rep]);
   return 'https://calendar.google.com/calendar/render?' + q.toString();
-}
-function icsText(o) {
-  const e2 = t => String(t).replace(/[\;,]/g, c => '\\' + c).replace(/\n/g, '\\n');
-  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
-  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Lucerna//IT', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT', `UID:${o.id || uid()}@lucerna`, `DTSTAMP:${stamp}`];
-  if (o.time) L.push(`DTSTART:${startOf(o)}`, `DTEND:${endOf(o)}`); else L.push(`DTSTART;VALUE=DATE:${startOf(o)}`, `DTEND;VALUE=DATE:${endOf(o)}`);
-  L.push(`SUMMARY:${e2(o.title)}`);
-  if (FREQ[o.rep]) L.push('RRULE:FREQ=' + FREQ[o.rep]);
-  if (o.alarm !== '' && o.alarm != null) {
-    const m = (o.time ? 0 : 540) - Number(o.alarm);   // senza ora, l'avviso è riferito alle 9:00
-    L.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${e2(o.title)}`, `TRIGGER;RELATED=START:${m < 0 ? '-' : ''}PT${Math.abs(m)}M`, 'END:VALARM');
-  }
-  L.push('END:VEVENT', 'END:VCALENDAR');
-  return L.join('\r\n') + '\r\n';
 }
 function openCal(o) {
   calObj = o;
@@ -932,7 +917,7 @@ wireForm($('#frmPlan'), form => {
 
 wireForm($('#frmEvent'), form => {
   const f = form.elements, id = form.dataset.id;
-  const data = { title: f.evTitle.value.trim().slice(0, 80), date: f.evDate.value, time: f.evTime.value || '', rep: f.evRep.value, alarm: f.evAlarm.value };
+  const data = { title: f.evTitle.value.trim().slice(0, 80), date: f.evDate.value, time: f.evTime.value || '', rep: f.evRep.value };
   if (!data.title || !data.date) return;
   if (id && S.events.find(e => e.id === id)) Object.assign(S.events.find(e => e.id === id), data);
   else S.events.push(Object.assign({ id: uid() }, data));
@@ -997,16 +982,9 @@ document.addEventListener('click', ev => {
         S.events = S.events.filter(e => e.id !== $('#frmEvent').dataset.id); $('#dlgEvent').close(); save(); render(); toast('Appuntamento eliminato.');
       }); break;
     case 'to-cal': {
-      if (b.dataset.kind === 'exam') { const e = examById(id); if (e) openCal({ id: e.id, title: 'Esame: ' + e.name, date: e.date, time: '', rep: 'none', alarm: '1440' }); }
+      if (b.dataset.kind === 'exam') { const e = examById(id); if (e) openCal({ id: e.id, title: 'Esame: ' + e.name, date: e.date, time: '', rep: 'none' }); }
       else { const e = S.events.find(x => x.id === id); if (e) openCal(e); }
       break;
-    }
-    case 'ics': {
-      if (!calObj) break;
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([icsText(calObj)], { type: 'text/calendar' }));
-      a.download = 'lucerna-appuntamento.ics'; document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 3000); toast('File creato: aprilo per aggiungerlo al calendario.'); break;
     }
     case 'set-awake': S.keepAwake = b.dataset.v === 'on'; save(); syncWake(); render(); break;
     case 'set-theme': S.theme = b.dataset.v; save(); render(); break;
