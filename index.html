@@ -30,6 +30,7 @@
   --ink:#ecdfc6; --muted:#b4a189; --gold:#c9a95c; --gold2:#e6cd8c;
   --blood:#7b1e2c; --blood2:#9c2b3c; --line:rgba(201,169,92,.38);
   --field:#0f0a0e; --tabbg:rgba(13,8,12,.96); --glossA:rgba(230,205,140,.16); --glossB:rgba(230,205,140,.04); --pressed:#fff3d2; --dangerink:#e8adb5;
+  --pressbg:linear-gradient(180deg,#f0dca0,#c9a95c); --pressink:#2a1410; --presshalo:rgba(230,205,140,.4);
   --display:"Cinzel",Georgia,"Times New Roman",serif;
   --body:"EB Garamond",Georgia,"Times New Roman",serif;
   --rem:clamp(15px,4.4vw,17.5px); --r-btn:999px; --r-in:12px;
@@ -38,12 +39,13 @@
 html[data-font="antico"]{--display:"IM Fell English",Georgia,serif;--body:"IM Fell English",Georgia,serif;--rem:clamp(14.5px,4.3vw,17px)}
 html[data-font="romantico"]{--display:"Playfair Display",Georgia,serif;--body:"Lora",Georgia,serif;--rem:clamp(14px,4.1vw,16px)}
 html[data-btn="classic"]{--r-btn:2px;--r-in:2px}
-html[data-theme="paper"]{color-scheme:light;--bg:#efe4cc;--bg2:#e7d9b9;--panel:#f7eed9;--panel2:#ecdfc4;--ink:#2b1a20;--muted:#6a5842;--gold:#86671c;--gold2:#654a0e;--line:rgba(101,74,14,.42);--field:#fbf5e6;--tabbg:rgba(239,228,204,.97);--glossA:rgba(255,255,255,.6);--glossB:rgba(255,255,255,.18);--pressed:#3a2608;--dangerink:#8a1f30}
-html[data-theme="paper"] #glass [stroke="#ecdfc6"]{stroke:#5a4630}
-html[data-theme="paper"] .btn[aria-pressed="true"]{background:rgba(101,74,14,.2);box-shadow:inset 0 0 0 1px var(--gold2)}
-html[data-theme="paper"] .glass{filter:drop-shadow(0 3px 4px rgba(60,30,20,.3))}
-html[data-theme="paper"] .masthead h1,html[data-theme="paper"] .tmtime{text-shadow:none}
-html[data-theme="paper"] .card{box-shadow:inset 0 0 0 3px var(--bg2),inset 0 0 0 4px rgba(101,74,14,.22),0 6px 16px rgba(80,50,20,.18)}
+html[data-theme="paper"]{--bg:#efe4cc;--bg2:#e7d9b9;--panel:#f7eed9;--panel2:#ecdfc4;--ink:#2b1a20;--muted:#6a5842;--gold:#86671c;--gold2:#654a0e;--line:rgba(101,74,14,.42);--field:#fbf5e6;--tabbg:rgba(239,228,204,.97);--glossA:rgba(255,255,255,.6);--glossB:rgba(255,255,255,.18);--pressed:#3a2608;--dangerink:#8a1f30;--pressbg:linear-gradient(180deg,#7a5a14,#5c430c);--pressink:#fbf3dc;--presshalo:rgba(101,74,14,.3)}
+html[data-theme="light"]{--bg:#f6f2f3;--bg2:#ece5e8;--panel:#ffffff;--panel2:#f3eef0;--ink:#241820;--muted:#6a5c64;--gold:#8a6420;--gold2:#6a4a12;--line:rgba(106,74,18,.34);--field:#ffffff;--tabbg:rgba(255,255,255,.97);--glossA:rgba(255,255,255,.9);--glossB:rgba(240,232,236,.7);--pressed:#2a1410;--dangerink:#8a1f30;--pressbg:linear-gradient(180deg,#8a6420,#6a4a12);--pressink:#fff8e8;--presshalo:rgba(106,74,18,.28)}
+html[data-tone="light"]{color-scheme:light}
+html[data-tone="light"] #glass [stroke="#ecdfc6"]{stroke:#5a4630}
+html[data-tone="light"] .glass{filter:drop-shadow(0 3px 4px rgba(60,30,20,.3))}
+html[data-tone="light"] .masthead h1,html[data-tone="light"] .tmtime{text-shadow:none}
+html[data-tone="light"] .card{box-shadow:inset 0 0 0 3px var(--bg2),inset 0 0 0 4px rgba(101,74,14,.22),0 6px 16px rgba(80,50,20,.18)}
 html[data-font="antico"] .tmtime{font-family:"Cinzel",Georgia,serif}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;color-scheme:dark;font-size:var(--rem)}
@@ -98,13 +100,14 @@ p{margin:0 0 10px}
 .btn.ghost{background:transparent;border-color:var(--line);color:var(--muted);box-shadow:none}
 .btn.danger{background:rgba(140,58,69,.12);border-color:#8c3a45;color:var(--dangerink);box-shadow:none}
 .btn.small{min-height:40px;padding:7px 15px;font-size:.68rem}
-.btn[aria-pressed="true"]{background:linear-gradient(180deg,rgba(230,205,140,.34),rgba(230,205,140,.14));color:var(--pressed);border-color:var(--gold2)}
+.btn[aria-pressed="true"]{background:var(--pressbg);color:var(--pressink);border-color:var(--gold2);text-shadow:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 0 0 2px var(--presshalo)}
+.btn[aria-pressed="true"]::before{content:"✓ "}
 .btn.block{width:100%}
 html[data-btn="classic"] .btn{background:transparent;box-shadow:none;padding:10px 14px}
 html[data-btn="classic"] .btn:hover{background:rgba(201,169,92,.1);filter:none}
 html[data-btn="classic"] .btn.primary{background:linear-gradient(180deg,var(--blood2),var(--blood))}
 html[data-btn="classic"] .btn.small{padding:6px 11px}
-html[data-btn="classic"] .btn[aria-pressed="true"]{background:rgba(201,169,92,.2)}
+html[data-btn="classic"] .btn[aria-pressed="true"]{background:var(--pressbg);box-shadow:0 0 0 2px var(--presshalo)}
 :focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
 label{display:block;margin:12px 0 4px;font:400 .72rem/1.3 var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 input,select{font:inherit;font-family:var(--body);font-size:16px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:var(--r-in);padding:10px 14px;min-height:44px;width:100%}
@@ -334,7 +337,7 @@ function normalize(p) {
   if (!['oggi', 'esami', 'settimana', 'impostazioni'].includes(s.tab)) s.tab = 'oggi';
   if (!['elegante', 'antico', 'romantico'].includes(s.font)) s.font = 'elegante';
   if (!['round', 'classic'].includes(s.btn)) s.btn = 'round';
-  if (!['night', 'paper'].includes(s.theme)) s.theme = 'night';
+  if (!['night', 'paper', 'light'].includes(s.theme)) s.theme = 'night';
   s.keepAwake = s.keepAwake !== false;
   return s;
 }
@@ -344,10 +347,9 @@ function load() {
   return DEF();
 }
 function applyLook() {
-  const h = document.documentElement; h.dataset.font = S.font; h.dataset.btn = S.btn; h.dataset.theme = S.theme;
-  const paper = S.theme === 'paper';
-  $$('meta[name=theme-color]').forEach(m => m.content = paper ? '#efe4cc' : '#120c11');
-  $$('meta[name=color-scheme]').forEach(m => m.content = paper ? 'light' : 'dark');
+  const h = document.documentElement; h.dataset.font = S.font; h.dataset.btn = S.btn; h.dataset.theme = S.theme; h.dataset.tone = S.theme === 'night' ? 'dark' : 'light';
+  $$('meta[name=theme-color]').forEach(m => m.content = { night: '#120c11', paper: '#efe4cc', light: '#f6f2f3' }[S.theme]);
+  $$('meta[name=color-scheme]').forEach(m => m.content = S.theme === 'night' ? 'dark' : 'light');
 }
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(S)); if (!storageOK) { storageOK = true; $('#warn').hidden = true; } }
@@ -670,7 +672,7 @@ function viewImpostazioni() {
     <label>Carattere</label>
     ${seg('set-font', S.font, [['elegante', 'Elegante'], ['antico', 'Antico'], ['romantico', 'Romantico']], 'ff-')}
     <label>Tema</label>
-    ${seg('set-theme', S.theme, [['night', 'Notte'], ['paper', 'Carta e candela']])}
+    ${seg('set-theme', S.theme, [['night', 'Notte'], ['paper', 'Carta e candela'], ['light', 'Chiaro']])}
     <label>Pulsanti</label>
     ${seg('set-btn', S.btn, [['round', 'Arrotondati'], ['classic', 'Classici']])}
   </article>
