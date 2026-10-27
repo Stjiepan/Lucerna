@@ -31,17 +31,17 @@
   --blood:#7b1e2c; --blood2:#9c2b3c; --line:rgba(201,169,92,.38);
   --display:"Cinzel",Georgia,"Times New Roman",serif;
   --body:"EB Garamond",Georgia,"Times New Roman",serif;
-  --rem:17.5px; --r-btn:999px; --r-in:12px;
+  --rem:clamp(15px,4.4vw,17.5px); --r-btn:999px; --r-in:12px;
   --safe-b:env(safe-area-inset-bottom,0px);
 }
-html[data-font="antico"]{--display:"IM Fell English",Georgia,serif;--body:"IM Fell English",Georgia,serif;--rem:17px}
-html[data-font="romantico"]{--display:"Playfair Display",Georgia,serif;--body:"Lora",Georgia,serif;--rem:16px}
+html[data-font="antico"]{--display:"IM Fell English",Georgia,serif;--body:"IM Fell English",Georgia,serif;--rem:clamp(14.5px,4.3vw,17px)}
+html[data-font="romantico"]{--display:"Playfair Display",Georgia,serif;--body:"Lora",Georgia,serif;--rem:clamp(14px,4.1vw,16px)}
 html[data-btn="classic"]{--r-btn:2px;--r-in:2px}
 html[data-font="antico"] .tmtime{font-family:"Cinzel",Georgia,serif}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;color-scheme:dark;font-size:var(--rem)}
 body{
-  margin:0;min-height:100vh;min-height:100dvh;color:var(--ink);font:1.08rem/1.5 var(--body);
+  margin:0;min-height:100vh;min-height:100dvh;color:var(--ink);font:1.05rem/1.45 var(--body);
   background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M24 3 45 24 24 45 3 24Z' fill='none' stroke='%23c9a95c' stroke-opacity='.08'/%3E%3Ccircle cx='24' cy='24' r='2' fill='%23c9a95c' fill-opacity='.1'/%3E%3C/svg%3E");
 }
 main{max-width:560px;margin:0 auto;padding:20px 16px calc(96px + var(--safe-b))}
@@ -174,8 +174,11 @@ html[data-btn="classic"] .tabs button[aria-current="page"]{border-bottom-color:v
 
 dialog{width:calc(100% - 28px);max-width:440px;padding:20px;color:var(--ink);background:var(--panel);border:1px solid var(--gold);border-radius:3px;box-shadow:0 24px 70px rgba(0,0,0,.75)}
 dialog::backdrop{background:rgba(5,2,5,.8)}
-dialog h2{margin-bottom:6px}
-dialog .actions{justify-content:flex-end}
+dialog h2{margin-bottom:10px}
+dialog p{font-size:.95rem;line-height:1.45}
+dialog label{letter-spacing:.05em;font-size:.68rem}
+dialog .actions{margin-top:16px}
+dialog .actions .btn{flex:1}
 
 @media (prefers-reduced-motion:reduce){.flick,.glass .stream,.glass.running .hglow{animation:none}.toast{transition:none}}
 </style>
