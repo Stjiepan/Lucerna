@@ -48,6 +48,7 @@ html[data-tone="light"] .masthead h1,html[data-tone="light"] .tmtime{text-shadow
 html[data-tone="light"] .card{box-shadow:inset 0 0 0 3px var(--bg2),inset 0 0 0 4px rgba(101,74,14,.22),0 6px 16px rgba(80,50,20,.18)}
 html[data-font="antico"] .tmtime{font-family:"Cinzel",Georgia,serif}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%;color-scheme:dark;font-size:var(--rem)}
 body{
   margin:0;min-height:100vh;min-height:100dvh;color:var(--ink);font:1.05rem/1.45 var(--body);
@@ -193,6 +194,27 @@ dialog p{font-size:.95rem;line-height:1.45}
 dialog label{letter-spacing:.05em;font-size:.68rem}
 dialog .actions{margin-top:16px}
 dialog .actions .btn{flex:1}
+dialog .actions.stack{flex-direction:column}
+a.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;text-align:center}
+.check{display:flex;gap:10px;align-items:center;margin:16px 0 4px;font:inherit;font-size:1rem;letter-spacing:0;text-transform:none;color:var(--ink)}
+.calhead{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.calhead h3{flex:1;text-align:center}
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cwd{font:400 .64rem/1 var(--display);letter-spacing:.06em;text-align:center;color:var(--muted);padding:4px 0}
+.cday{font:inherit;font-size:.95rem;line-height:1.1;color:var(--ink);background:transparent;border:1px solid transparent;border-radius:var(--r-in);min-height:44px;padding:4px 0 2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;touch-action:manipulation}
+.cday.out{color:var(--muted);opacity:.5}
+.cday.today{border-color:var(--gold)}
+.cday[aria-pressed="true"]{background:var(--pressbg);color:var(--pressink);border-color:var(--gold2)}
+.dots{display:flex;gap:3px;height:5px}
+.dots b{width:5px;height:5px;border-radius:50%}
+.de{background:var(--gold2)}
+.dx{background:var(--blood2)}
+.cday[aria-pressed="true"] .de{background:var(--pressink)}
+.legend{margin:10px 0 0}
+.legend b{display:inline-block;width:8px;height:8px;border-radius:50%;margin:0 4px 0 8px;vertical-align:baseline}
+.legend b:first-child{margin-left:0}
+.slot.evrow{flex-wrap:wrap}
+.evbtn{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
 
 @media (prefers-reduced-motion:reduce){.flick,.glass .stream,.glass.running .hglow{animation:none}.toast{transition:none}}
 </style>
@@ -216,7 +238,7 @@ dialog .actions .btn{flex:1}
 <nav class="tabs" aria-label="Sezioni">
   <button data-tab="oggi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12M6 21h12M7 3c0 5 5 6 5 9s-5 4-5 9M17 3c0 5-5 6-5 9s5 4 5 9"/></svg>Oggi</button>
   <button data-tab="esami"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM19 19v2H6a2 2 0 0 1-2-2M9 8h6"/></svg>Esami</button>
-  <button data-tab="settimana"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg>Settimana</button>
+  <button data-tab="settimana"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg>Agenda</button>
   <button data-tab="impostazioni"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.5"/><circle cx="8" cy="17" r="2.5"/></svg>Impostazioni</button>
 </nav>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -240,6 +262,9 @@ dialog .actions .btn{flex:1}
     <input id="exDate" name="exDate" type="date" required>
     <div class="rowform">
       <div class="grow"><label for="exCfu">CFU</label><input id="exCfu" name="exCfu" type="number" inputmode="numeric" min="0" max="60"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="exTrack" name="exTrack"> Segui anche le pagine del manuale</label>
+    <div class="rowform" id="exPages" hidden>
       <div class="grow"><label for="exTotal">Pagine totali</label><input id="exTotal" name="exTotal" type="number" inputmode="numeric" min="0" max="5000"></div>
       <div class="grow"><label for="exRead">Già lette</label><input id="exRead" name="exRead" type="number" inputmode="numeric" min="0" max="5000"></div>
     </div>
@@ -270,6 +295,35 @@ dialog .actions .btn{flex:1}
     </div>
     <div class="actions"><button type="button" class="btn ghost" data-close>Annulla</button><button type="button" class="btn primary" data-ok>Aggiungi</button></div>
   </form>
+</dialog>
+
+<dialog id="dlgEvent" aria-labelledby="evTitleH">
+  <form id="frmEvent">
+    <h2 id="evTitleH">Nuovo appuntamento</h2>
+    <label for="evTitle">Titolo</label>
+    <input id="evTitle" name="evTitle" required maxlength="80" placeholder="Es. Compleanno di Anna">
+    <div class="rowform">
+      <div class="grow"><label for="evDate">Giorno</label><input id="evDate" name="evDate" type="date" required></div>
+      <div class="grow"><label for="evTime">Ora (facoltativa)</label><input id="evTime" name="evTime" type="time"></div>
+    </div>
+    <div class="rowform">
+      <div class="grow"><label for="evRep">Si ripete</label><select id="evRep" name="evRep"><option value="none">Mai</option><option value="year">Ogni anno</option><option value="month">Ogni mese</option><option value="week">Ogni settimana</option></select></div>
+      <div class="grow"><label for="evAlarm">Avviso nel calendario</label><select id="evAlarm" name="evAlarm"><option value="">Nessuno</option><option value="0">All’ora dell’evento</option><option value="15">15 minuti prima</option><option value="60">1 ora prima</option><option value="1440">1 giorno prima</option></select></div>
+    </div>
+    <p class="muted small">L’avviso vale per il calendario del telefono: lo si attiva col pulsante «Calendario» accanto all’appuntamento.</p>
+    <div class="actions"><button type="button" class="btn danger" data-act="del-event-dlg" id="evDel" hidden>Elimina</button><button type="button" class="btn ghost" data-close>Annulla</button><button type="button" class="btn primary" data-ok>Salva</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlgCal" aria-labelledby="calH">
+  <h2 id="calH">Nel calendario del telefono</h2>
+  <p id="calMsg"></p>
+  <p class="muted small">Così il telefono ti avvisa anche con Lucerna chiusa. Con Google Calendar l’avviso lo imposti lì; il file .ics contiene già quello che hai scelto.</p>
+  <div class="actions stack">
+    <a class="btn primary block" id="calGoogle" target="_blank" rel="noopener">Apri Google Calendar</a>
+    <button type="button" class="btn block" data-act="ics">Scarica file .ics</button>
+    <button type="button" class="btn ghost block" data-close>Chiudi</button>
+  </div>
 </dialog>
 
 <dialog id="dlgConfirm" aria-labelledby="cfTitle">
@@ -326,14 +380,15 @@ const MAXIMS = [
 const DEF = () => ({
   v: 1, name: '', welcomed: false, tab: 'oggi', font: 'elegante', btn: 'round', theme: 'night', keepAwake: true,
   weeklyGoalMin: 720, focusMin: 25, breakMin: 5,
-  exams: [], sessions: [], plan: [],
+  exams: [], sessions: [], plan: [], events: [],
   timer: { mode: 'focus', running: false, endsAt: null, remainingMs: null, examId: '' }
 });
 function normalize(p) {
   const d = DEF();
   const s = Object.assign(d, p && typeof p === 'object' ? p : {});
   s.timer = Object.assign(DEF().timer, (p && p.timer) || {});
-  ['exams', 'sessions', 'plan'].forEach(k => { if (!Array.isArray(s[k])) s[k] = []; });
+  ['exams', 'sessions', 'plan', 'events'].forEach(k => { if (!Array.isArray(s[k])) s[k] = []; });
+  s.events = s.events.filter(e => e && typeof e.title === 'string' && e.title && /^\d{4}-\d{2}-\d{2}$/.test(e.date));
   if (!['oggi', 'esami', 'settimana', 'impostazioni'].includes(s.tab)) s.tab = 'oggi';
   if (!['elegante', 'antico', 'romantico'].includes(s.font)) s.font = 'elegante';
   if (!['round', 'classic'].includes(s.btn)) s.btn = 'round';
@@ -545,6 +600,7 @@ function viewOggi() {
     <h2 class="plain hello">${hello}${S.name ? `, ${esc(S.name)}` : ''}.</h2>
     <p class="muted">${nx ? `Prossimo esame: <strong>${esc(nx.name)}</strong>, ${inDays(daysBetween(now, parseYMD(nx.date)))}.` : 'Aggiungi il tuo primo esame nella scheda «Esami» per iniziare.'}</p>
   </article>
+  ${soonCard()}
 
   <article class="card">
     <h2>La Clessidra</h2>
@@ -597,7 +653,7 @@ function viewOggi() {
 }
 
 function pagesBlock(e) {
-  if (!(e.pagesTotal > 0)) return '<p class="muted small">Nessun manuale impostato: modifica l’esame per seguire le pagine.</p>';
+  if (!(e.pagesTotal > 0)) return '';
   const read = Math.min(e.pagesRead || 0, e.pagesTotal), pct = Math.round(read / e.pagesTotal * 100), rem = e.pagesTotal - read;
   const dl = daysBetween(new Date(), parseYMD(e.date));
   const pace = rem === 0 ? 'Programma completato: ora ripassa.' : dl > 0 ? `Ritmo necessario: circa ${Math.ceil(rem / dl)} pagine al giorno.` : `Mancano ${rem} pagine.`;
@@ -637,9 +693,11 @@ function viewSettimana() {
     const slots = S.plan.filter(p => p.date === ymd(d)).sort((a, b) => a.time.localeCompare(b.time));
     return `<h3 class="dayhead">${esc(cap(fmtShort.format(d)))}</h3>${slots.length ? `<ul class="slots">${slots.map(slotRow).join('')}</ul>` : '<p class="muted small">Nessuna sessione.</p>'}`;
   }).join('');
-  return `<h2 class="plain">La settimana</h2>
+  return `<h2 class="plain">Agenda</h2>
+  ${calendarCards()}
   <article class="card">
-    <h2>${esc(fmtDM.format(mon))} – ${esc(fmtDM.format(addDays(mon, 6)))}</h2>
+    <h2>Ore di studio</h2>
+    <p class="muted small center" style="margin-top:-6px">${esc(fmtDM.format(mon))} – ${esc(fmtDM.format(addDays(mon, 6)))}</p>
     <div class="chart" role="img" aria-label="Minuti di studio per giorno, totale ${fmtMin(total)}">${cols}</div>
     <p style="margin-top:14px"><strong>${fmtMin(total)}</strong> <span class="muted">su ${fmtMin(S.weeklyGoalMin)} di limite settimanale.</span></p>
   </article>
@@ -685,6 +743,115 @@ function viewImpostazioni() {
   </article>
   <p class="muted small center">Lucerna · fatta a mano, per te</p>`;
 }
+
+/* ---------- agenda: appuntamenti e ricorrenze ---------- */
+const REP_LABEL = { none: '', year: 'ogni anno', month: 'ogni mese', week: 'ogni settimana' };
+const lastDom = (y, m) => new Date(y, m + 1, 0).getDate();
+function occursOn(ev, d) {
+  const s0 = parseYMD(ev.date), t = sod(d);
+  if (t < s0) return false;
+  const r = ev.rep || 'none', dim = lastDom(t.getFullYear(), t.getMonth());
+  if (r === 'none') return ymd(t) === ev.date;
+  if (r === 'week') return daysBetween(s0, t) % 7 === 0;
+  if (r === 'month') return t.getDate() === Math.min(s0.getDate(), dim);
+  if (r === 'year') return t.getMonth() === s0.getMonth() && t.getDate() === Math.min(s0.getDate(), dim);
+  return false;
+}
+function itemsOn(d) {
+  const k = ymd(d), out = [];
+  S.events.forEach(ev => { if (occursOn(ev, d)) out.push({ kind: 'event', id: ev.id, date: k, time: ev.time || '', title: ev.title, rep: ev.rep || 'none' }); });
+  S.exams.filter(e => !e.done && e.date === k).forEach(e => out.push({ kind: 'exam', id: e.id, date: k, time: '', title: 'Esame: ' + e.name, rep: 'none' }));
+  return out.sort((a, b) => a.time.localeCompare(b.time));
+}
+function upcoming(n, days) {
+  const out = [], start = sod(new Date());
+  for (let i = 0; i < days && out.length < n; i++) itemsOn(addDays(start, i)).forEach(it => { if (out.length < n) out.push(it); });
+  return out;
+}
+function itemRow(it, withDate) {
+  const d = parseYMD(it.date), n = daysBetween(new Date(), d);
+  const lbl = n === 0 ? 'Oggi' : n === 1 ? 'Domani' : cap(fmtShort.format(d));
+  const rep = REP_LABEL[it.rep] ? ` <span class="badge past">${REP_LABEL[it.rep]}</span>` : '';
+  return `<li class="slot evrow">
+    <div class="grow">${withDate ? `<div class="muted small">${esc(lbl)}${it.time ? ' · ' + esc(it.time) : ''}</div>` : ''}
+      <div>${!withDate && it.time ? `<strong>${esc(it.time)}</strong> · ` : ''}${esc(it.title)}${rep}</div></div>
+    <div class="evbtn"><button class="btn small ghost" data-act="to-cal" data-kind="${it.kind}" data-id="${it.id}">Calendario</button>${it.kind === 'event' ? `<button class="btn small ghost" data-act="edit-event" data-id="${it.id}">Modifica</button>` : ''}</div></li>`;
+}
+let calY = new Date().getFullYear(), calM = new Date().getMonth(), calSel = ymd(new Date());
+function calendarCards() {
+  const first = new Date(calY, calM, 1), off = (first.getDay() + 6) % 7, rows = Math.ceil((off + lastDom(calY, calM)) / 7), start = addDays(first, -off), todayK = ymd(new Date());
+  const head = ['L', 'M', 'M', 'G', 'V', 'S', 'D'].map(x => `<span class="cwd" aria-hidden="true">${x}</span>`).join('');
+  let cells = '';
+  for (let i = 0; i < rows * 7; i++) {
+    const d = addDays(start, i), k = ymd(d), its = itemsOn(d), inM = d.getMonth() === calM;
+    cells += `<button class="cday ${inM ? '' : 'out'} ${k === todayK ? 'today' : ''}" data-act="cal-day" data-date="${k}" aria-pressed="${k === calSel}" aria-label="${esc(fmtLong.format(d))}${its.length ? ', ' + its.length + (its.length === 1 ? ' impegno' : ' impegni') : ''}"><span>${d.getDate()}</span><i class="dots">${its.some(x => x.kind === 'exam') ? '<b class="dx"></b>' : ''}${its.some(x => x.kind === 'event') ? '<b class="de"></b>' : ''}</i></button>`;
+  }
+  const sel = parseYMD(calSel), day = itemsOn(sel), up = upcoming(6, 120);
+  return `<article class="card">
+    <div class="calhead"><button class="btn small ghost" data-act="cal-prev" aria-label="Mese precedente">‹</button><h3>${esc(cap(new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }).format(first)))}</h3><button class="btn small ghost" data-act="cal-next" aria-label="Mese successivo">›</button></div>
+    <div class="cgrid">${head}${cells}</div>
+    <p class="muted small legend"><b class="de"></b>appuntamento<b class="dx"></b>esame</p>
+    <div class="rule" aria-hidden="true"></div>
+    <h3 class="subh">${esc(cap(fmtLong.format(sel)))}</h3>
+    ${day.length ? `<ul class="slots">${day.map(i => itemRow(i, false)).join('')}</ul>` : '<p class="muted small">Nessun impegno in questo giorno.</p>'}
+    <div class="actions"><button class="btn small" data-act="add-event" data-date="${calSel}">+ Aggiungi appuntamento</button><button class="btn small ghost" data-act="cal-today">Oggi</button></div>
+  </article>
+  <article class="card">
+    <h2>In arrivo</h2>
+    ${up.length ? `<ul class="slots">${up.map(i => itemRow(i, true)).join('')}</ul>` : '<p class="muted">Niente in programma nei prossimi mesi.</p>'}
+  </article>`;
+}
+function soonCard() {
+  const items = [].concat(itemsOn(new Date()).map(i => [i, 'Oggi']), itemsOn(addDays(new Date(), 1)).map(i => [i, 'Domani']));
+  if (!items.length) return '';
+  return `<article class="card"><h2>Oggi e domani</h2><ul class="slots">${items.map(([i, l]) => `<li class="slot"><div class="grow"><div class="muted small">${l}${i.time ? ' · ' + esc(i.time) : ''}</div><div>${esc(i.title)}</div></div></li>`).join('')}</ul></article>`;
+}
+function openEvent(id, date) {
+  const ev = id ? S.events.find(e => e.id === id) : null, f = $('#frmEvent').elements;
+  $('#frmEvent').dataset.id = id || '';
+  $('#evTitleH').textContent = ev ? 'Modifica appuntamento' : 'Nuovo appuntamento';
+  f.evTitle.value = ev ? ev.title : ''; f.evDate.value = ev ? ev.date : (date || ymd(new Date())); f.evTime.value = ev ? ev.time || '' : '';
+  f.evRep.value = ev ? ev.rep || 'none' : 'none'; f.evAlarm.value = ev ? ev.alarm || '' : '';
+  $('#evDel').hidden = !ev; $('#dlgEvent').showModal();
+}
+// Passaggio al calendario del telefono: link precompilato per Google Calendar e file .ics (con avviso, se scelto).
+let calObj = null;
+const compact = s => s.replace(/-/g, '');
+function endOf(o) {
+  if (!o.time) return compact(ymd(addDays(parseYMD(o.date), 1)));
+  const [h, m] = o.time.split(':').map(Number), st = parseYMD(o.date); st.setHours(h, m);
+  const en = new Date(st.getTime() + 3600000);
+  return `${compact(ymd(en))}T${pad(en.getHours())}${pad(en.getMinutes())}00`;
+}
+const startOf = o => compact(o.date) + (o.time ? 'T' + o.time.replace(':', '') + '00' : '');
+const FREQ = { year: 'YEARLY', month: 'MONTHLY', week: 'WEEKLY' };
+function googleUrl(o) {
+  const q = new URLSearchParams({ action: 'TEMPLATE', text: o.title, dates: startOf(o) + '/' + endOf(o), details: 'Aggiunto da Lucerna' });
+  if (FREQ[o.rep]) q.set('recur', 'RRULE:FREQ=' + FREQ[o.rep]);
+  return 'https://calendar.google.com/calendar/render?' + q.toString();
+}
+function icsText(o) {
+  const e2 = t => String(t).replace(/[\;,]/g, c => '\\' + c).replace(/\n/g, '\\n');
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Lucerna//IT', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT', `UID:${o.id || uid()}@lucerna`, `DTSTAMP:${stamp}`];
+  if (o.time) L.push(`DTSTART:${startOf(o)}`, `DTEND:${endOf(o)}`); else L.push(`DTSTART;VALUE=DATE:${startOf(o)}`, `DTEND;VALUE=DATE:${endOf(o)}`);
+  L.push(`SUMMARY:${e2(o.title)}`);
+  if (FREQ[o.rep]) L.push('RRULE:FREQ=' + FREQ[o.rep]);
+  if (o.alarm !== '' && o.alarm != null) {
+    const m = (o.time ? 0 : 540) - Number(o.alarm);   // senza ora, l'avviso è riferito alle 9:00
+    L.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${e2(o.title)}`, `TRIGGER;RELATED=START:${m < 0 ? '-' : ''}PT${Math.abs(m)}M`, 'END:VALARM');
+  }
+  L.push('END:VEVENT', 'END:VCALENDAR');
+  return L.join('\r\n') + '\r\n';
+}
+function openCal(o) {
+  calObj = o;
+  const d = parseYMD(o.date);
+  $('#calMsg').innerHTML = `<strong>${esc(o.title)}</strong><br><span class="muted">${esc(fmtLong.format(d))}${o.time ? ' · ' + esc(o.time) : ''}${REP_LABEL[o.rep] ? ' · ' + REP_LABEL[o.rep] : ''}</span>`;
+  $('#calGoogle').href = googleUrl(o);
+  $('#dlgCal').showModal();
+}
+
 function render() {
   applyLook(); syncWake();
   const v = S.tab;
@@ -706,6 +873,7 @@ function openExam(id) {
   $('#exTitle').textContent = e ? 'Modifica esame' : 'Nuovo esame';
   f.exName.value = e ? e.name : ''; f.exDate.value = e ? e.date : '';
   f.exCfu.value = e && e.cfu ? e.cfu : ''; f.exTotal.value = e && e.pagesTotal ? e.pagesTotal : ''; f.exRead.value = e && e.pagesRead ? e.pagesRead : '';
+  f.exTrack.checked = !!(e && e.pagesTotal > 0); $('#exPages').hidden = !f.exTrack.checked;
   $('#dlgExam').showModal();
 }
 function openPlan(date) {
@@ -742,7 +910,8 @@ wireForm($('#frmWelcome'), () => {
 $('#dlgWelcome').addEventListener('close', () => { if (!S.welcomed) { S.welcomed = true; save(); } });
 wireForm($('#frmExam'), form => {
   const f = form.elements, id = form.dataset.id;
-  const total = Math.max(0, Math.round(num(f.exTotal.value))), read = clamp(Math.round(num(f.exRead.value)), 0, total || 0);
+  const tr = f.exTrack.checked;
+  const total = tr ? Math.max(0, Math.round(num(f.exTotal.value))) : 0, read = tr ? clamp(Math.round(num(f.exRead.value)), 0, total || 0) : 0;
   const data = { name: f.exName.value.trim().slice(0, 80), date: f.exDate.value, cfu: Math.max(0, Math.round(num(f.exCfu.value))) || 0, pagesTotal: total, pagesRead: read };
   if (!data.name || !data.date) return;
   if (id && examById(id)) Object.assign(examById(id), data);
@@ -759,6 +928,16 @@ wireForm($('#frmPlan'), form => {
   const f = form.elements;
   S.plan.push({ id: uid(), date: f.plDate.value, time: f.plTime.value, min: clamp(Math.round(num(f.plMin.value, 60)), 5, 600), examId: f.plExam.value || null, done: false });
   $('#dlgPlan').close(); save(); render(); toast('Sessione aggiunta.');
+});
+
+wireForm($('#frmEvent'), form => {
+  const f = form.elements, id = form.dataset.id;
+  const data = { title: f.evTitle.value.trim().slice(0, 80), date: f.evDate.value, time: f.evTime.value || '', rep: f.evRep.value, alarm: f.evAlarm.value };
+  if (!data.title || !data.date) return;
+  if (id && S.events.find(e => e.id === id)) Object.assign(S.events.find(e => e.id === id), data);
+  else S.events.push(Object.assign({ id: uid() }, data));
+  const d = parseYMD(data.date); calSel = data.date; calY = d.getFullYear(); calM = d.getMonth();
+  $('#dlgEvent').close(); save(); render(); toast('Appuntamento salvato.');
 });
 
 /* ---------- eventi ---------- */
@@ -806,6 +985,29 @@ document.addEventListener('click', ev => {
     }
     case 'import': $('#fileImport').click(); break;
     case 'set-font': S.font = b.dataset.v; save(); render(); break;
+    case 'cal-prev': calM--; if (calM < 0) { calM = 11; calY--; } render(); break;
+    case 'cal-next': calM++; if (calM > 11) { calM = 0; calY++; } render(); break;
+    case 'cal-today': { const t0 = new Date(); calY = t0.getFullYear(); calM = t0.getMonth(); calSel = ymd(t0); render(); break; }
+    case 'cal-day': { calSel = b.dataset.date; const d = parseYMD(calSel); calY = d.getFullYear(); calM = d.getMonth(); render(); break; }
+    case 'add-event': openEvent(null, b.dataset.date); break;
+    case 'edit-event': openEvent(id); break;
+    case 'del-event-dlg':
+      askConfirm('Eliminare questo appuntamento?', 'Elimina', true).then(yes => {
+        if (!yes) return;
+        S.events = S.events.filter(e => e.id !== $('#frmEvent').dataset.id); $('#dlgEvent').close(); save(); render(); toast('Appuntamento eliminato.');
+      }); break;
+    case 'to-cal': {
+      if (b.dataset.kind === 'exam') { const e = examById(id); if (e) openCal({ id: e.id, title: 'Esame: ' + e.name, date: e.date, time: '', rep: 'none', alarm: '1440' }); }
+      else { const e = S.events.find(x => x.id === id); if (e) openCal(e); }
+      break;
+    }
+    case 'ics': {
+      if (!calObj) break;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([icsText(calObj)], { type: 'text/calendar' }));
+      a.download = 'lucerna-appuntamento.ics'; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 3000); toast('File creato: aprilo per aggiungerlo al calendario.'); break;
+    }
     case 'set-awake': S.keepAwake = b.dataset.v === 'on'; save(); syncWake(); render(); break;
     case 'set-theme': S.theme = b.dataset.v; save(); render(); break;
     case 'test-chime': ensureAudio(); chime(2); break;
@@ -818,6 +1020,7 @@ document.addEventListener('click', ev => {
 });
 document.addEventListener('change', ev => {
   const t = ev.target;
+  if (t.id === 'exTrack') { $('#exPages').hidden = !t.checked; return; }
   if (t.matches('[data-field="tm-exam"]')) { T().examId = t.value; save(); return; }
   if (t.matches('[data-act="toggle-plan"]')) {
     const p = S.plan.find(x => x.id === t.dataset.id); if (!p) return;
