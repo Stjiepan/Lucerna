@@ -215,6 +215,14 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 .legend b:first-child{margin-left:0}
 .slot.evrow{flex-wrap:wrap}
 .evbtn{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+#dlgCard{max-height:calc(100dvh - 32px);overflow:auto}
+.cardbox{text-align:center}
+#cardLantern .lantern{display:block;width:78px;margin:0 auto 4px}
+.cardhello{font:400 1.35rem/1.25 var(--display);color:var(--gold2);margin:4px 0 12px}
+#cardText p{font-size:1rem;line-height:1.5;margin:0 0 10px}
+.cardsign{font-style:italic;color:var(--muted);margin:14px 0 18px}
+.installbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.installbar .grow{min-width:170px}
 
 @media (prefers-reduced-motion:reduce){.flick,.glass .stream,.glass.running .hglow{animation:none}.toast{transition:none}}
 </style>
@@ -297,6 +305,18 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
   </form>
 </dialog>
 
+<dialog id="dlgCard" aria-labelledby="cardH">
+  <div class="cardbox">
+    <div id="cardLantern" aria-hidden="true"></div>
+    <h2 id="cardH">Per te</h2>
+    <p class="cardhello" id="cardHello"></p>
+    <div id="cardText"></div>
+    <p class="cardsign" id="cardSign"></p>
+    <div id="cardInstall"></div>
+    <button type="button" class="btn primary block" id="cardOpen" data-close>Apri il quaderno</button>
+  </div>
+</dialog>
+
 <dialog id="dlgEvent" aria-labelledby="evTitleH">
   <form id="frmEvent">
     <h2 id="evTitleH">Nuovo appuntamento</h2>
@@ -376,7 +396,7 @@ const MAXIMS = [
 
 /* ---------- stato e salvataggio ---------- */
 const DEF = () => ({
-  v: 1, name: '', welcomed: false, tab: 'oggi', font: 'elegante', btn: 'round', theme: 'night', keepAwake: true,
+  v: 1, name: '', welcomed: false, tab: 'oggi', font: 'elegante', btn: 'round', theme: 'night', keepAwake: true, cardSeen: false, installDismissed: false,
   weeklyGoalMin: 720, focusMin: 25, breakMin: 5,
   exams: [], sessions: [], plan: [], events: [],
   timer: { mode: 'focus', running: false, endsAt: null, remainingMs: null, examId: '' }
@@ -392,6 +412,7 @@ function normalize(p) {
   if (!['round', 'classic'].includes(s.btn)) s.btn = 'round';
   if (!['night', 'paper', 'light'].includes(s.theme)) s.theme = 'night';
   s.keepAwake = s.keepAwake !== false;
+  s.cardSeen = !!s.cardSeen; s.installDismissed = !!s.installDismissed;
   return s;
 }
 let storageOK = true;
@@ -594,6 +615,7 @@ function viewOggi() {
     : 'La lanterna arde alta: la settimana è ancora lunga.';
   const [lat, ita] = maximOfDay(), t = T();
   return `
+  ${installCard()}
   <article class="card">
     <p class="eyebrow">${esc(cap(fmtLong.format(now)))}</p>
     <h2 class="plain hello">${hello}${S.name ? `, ${esc(S.name)}` : ''}.</h2>
@@ -734,6 +756,16 @@ function viewImpostazioni() {
     ${seg('set-btn', S.btn, [['round', 'Arrotondati'], ['classic', 'Classici']])}
   </article>
   <article class="card">
+    <h2>Un pensiero</h2>
+    <p class="muted small">Il biglietto che trovi al primo avvio.</p>
+    <div class="actions"><button class="btn small" data-act="show-card">Rivedi il biglietto</button></div>
+  </article>
+  ${isStandalone() ? '' : `<article class="card">
+    <h2>Installazione</h2>
+    <p class="muted small">Per avere l’icona nella schermata Home: apri Lucerna con Chrome, tocca il menu ⋮ e scegli «Installa app».</p>
+    ${installEvt ? '<div class="actions"><button class="btn small primary" data-act="install">Installa ora</button></div>' : ''}
+  </article>`}
+  <article class="card">
     <h2>I tuoi dati</h2>
     <p class="muted small">I dati restano soltanto su questo dispositivo. Salva una copia ogni tanto: se cambi telefono potrai ripristinarla.</p>
     <div class="actions"><button class="btn small" data-act="export">Salva copia</button><button class="btn small" data-act="import">Ripristina</button></div>
@@ -835,6 +867,45 @@ function openCal(o) {
   $('#calMsg').innerHTML = `<strong>${esc(o.title)}</strong><br><span class="muted">${esc(fmtLong.format(d))}${o.time ? ' · ' + esc(o.time) : ''}${REP_LABEL[o.rep] ? ' · ' + REP_LABEL[o.rep] : ''}</span>`;
   $('#calGoogle').href = googleUrl(o);
   $('#dlgCal').showModal();
+}
+
+/* ---------- biglietto di auguri e installazione ---------- */
+// Testo del biglietto: si cambia qui. Ogni voce è un paragrafo.
+const CARD_TEXT = [
+  'Ho pensato a un piccolo regalo che ti stesse vicino nelle giornate di studio: un quaderno tutto tuo, senza account e senza nessuno che guardi i tuoi dati.',
+  'La clessidra scandisce il tempo, la lanterna ti ricorda di non consumarlo tutto e di riposare, e ogni giorno una massima latina ti fa un po’ di compagnia.',
+  'Spero ti sia utile, e che ti faccia sorridere ogni tanto.'
+];
+const CARD_SIGN = 'Un abbraccio, Stefano';
+const CARD_TO = 'Sara';
+function showCard() {
+  $('#cardLantern').innerHTML = lanternSVG(0);
+  $('#cardHello').textContent = `Buon compleanno, ${CARD_TO}.`;
+  renderCardInstall();
+  $('#cardText').innerHTML = CARD_TEXT.map(p => `<p>${esc(p)}</p>`).join('');
+  $('#cardSign').textContent = CARD_SIGN;
+  if (!$('#dlgCard').open) $('#dlgCard').showModal();
+}
+$('#dlgCard').addEventListener('close', () => { if (!S.cardSeen) { S.cardSeen = true; save(); } if (!S.welcomed) $('#dlgWelcome').showModal(); });
+let installEvt = null, installDone = false;
+// In fondo al biglietto: pulsante di installazione (se il browser lo consente) o istruzioni a mano.
+function renderCardInstall() {
+  const box = $('#cardInstall'), open = $('#cardOpen'); if (!box) return;
+  let html = '', prim = true;
+  if (!isStandalone()) {
+    if (installDone) html = '<p class="muted small" style="margin:0 0 14px">Installata! La trovi nella schermata Home.</p>';
+    else if (installEvt) { html = '<button type="button" class="btn primary block" data-act="install">Installa l’app sul telefono</button><p class="muted small" style="margin:8px 0 14px">Avrai un’icona nella schermata Home e funzionerà anche senza internet.</p>'; prim = false; }
+    else html = '<p class="muted small" style="margin:0 0 14px">Per avere l’icona nella schermata Home: apri Lucerna con Chrome, tocca il menu ⋮ e scegli «Installa app».</p>';
+  }
+  box.innerHTML = html; open.className = 'btn block' + (prim ? ' primary' : '');
+}
+const isStandalone = () => { try { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) { return false; } };
+window.addEventListener('beforeinstallprompt', ev => { ev.preventDefault(); installEvt = ev; renderCardInstall(); if (S.tab === 'oggi' && !document.querySelector('dialog[open]')) render(); });
+window.addEventListener('appinstalled', () => { installEvt = null; installDone = true; renderCardInstall(); render(); });
+function installCard() {
+  if (isStandalone() || !installEvt || S.installDismissed) return '';
+  return `<article class="card"><div class="installbar"><div class="grow"><h3>Installa Lucerna</h3><p class="muted small" style="margin:2px 0 0">Avrai un’icona nella schermata Home e potrai usarla anche senza internet.</p></div>
+    <div class="row"><button class="btn primary small" data-act="install">Installa</button><button class="btn ghost small" data-act="install-dismiss" aria-label="Non ora">Non ora</button></div></div></article>`;
 }
 
 function render() {
@@ -970,6 +1041,14 @@ document.addEventListener('click', ev => {
     }
     case 'import': $('#fileImport').click(); break;
     case 'set-font': S.font = b.dataset.v; save(); render(); break;
+    case 'show-card': showCard(); break;
+    case 'install-dismiss': S.installDismissed = true; save(); render(); break;
+    case 'install': {
+      const e = installEvt; if (!e) break;
+      installEvt = null; e.prompt();
+      Promise.resolve(e.userChoice).then(c => { if (c && c.outcome === 'dismissed') { S.installDismissed = true; save(); } renderCardInstall(); render(); }).catch(() => { renderCardInstall(); render(); });
+      break;
+    }
     case 'cal-prev': calM--; if (calM < 0) { calM = 11; calY--; } render(); break;
     case 'cal-next': calM++; if (calM > 11) { calM = 0; calY++; } render(); break;
     case 'cal-today': { const t0 = new Date(); calY = t0.getFullYear(); calM = t0.getMonth(); calSel = ymd(t0); render(); break; }
@@ -1035,7 +1114,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) tick
 render();
 tick();
 setInterval(tick, 250);
-if (!S.welcomed) $('#dlgWelcome').showModal();
+if (!S.cardSeen) showCard(); else if (!S.welcomed) $('#dlgWelcome').showModal();
 try { if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
 })();
 </script>

@@ -1,6 +1,6 @@
 /* Service worker: l'app funziona anche offline.
    Per rilasciare una nuova versione cambia il numero in CACHE. */
-const CACHE = 'lucerna-v7';
+const CACHE = 'lucerna-v9';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
