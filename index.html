@@ -220,7 +220,7 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 #cardLantern .lantern{display:block;width:78px;margin:0 auto 4px}
 .cardhello{font:400 1.35rem/1.25 var(--display);color:var(--gold2);margin:4px 0 12px}
 #cardText p{font-size:1rem;line-height:1.5;margin:0 0 10px}
-.cardsign{font-style:italic;color:var(--muted);margin:14px 0 18px}
+.cardsign{font-style:italic;color:var(--muted);margin:14px 0 18px;white-space:pre-line}
 .installbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .installbar .grow{min-width:170px}
 
@@ -872,11 +872,11 @@ function openCal(o) {
 /* ---------- biglietto di auguri e installazione ---------- */
 // Testo del biglietto: si cambia qui. Ogni voce è un paragrafo.
 const CARD_TEXT = [
-  'Ho pensato a un piccolo regalo che ti stesse vicino nelle giornate di studio: un quaderno tutto tuo, senza account e senza nessuno che guardi i tuoi dati.',
-  'La clessidra scandisce il tempo, la lanterna ti ricorda di non consumarlo tutto e di riposare, e ogni giorno una massima latina ti fa un po’ di compagnia.',
-  'Spero ti sia utile, e che ti faccia sorridere ogni tanto.'
+  'Volevo supportarti e aiutarti, in qualche modo, nel percorso di studi che hai scelto, e così è nata questa piccola app: spero ti aiuti a organizzare e a tenere traccia delle tue ore di studio!',
+  'Spero che ti piaccia, anche nello stile che ho scelto, e che possa esserti davvero utile, nel suo piccolo.',
+  'Usala come, quando e se ti va: è tutta tua!'
 ];
-const CARD_SIGN = 'Un abbraccio, Stefano';
+const CARD_SIGN = 'Un abbraccio\nStefano';
 const CARD_TO = 'Sara';
 function showCard() {
   $('#cardLantern').innerHTML = lanternSVG(0);
