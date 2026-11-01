@@ -127,7 +127,7 @@ input::placeholder{color:#7d6e5d}
 
 /* indicatori */
 .selrow{display:flex;gap:8px;align-items:stretch}
-.selrow select{flex:1;min-width:0}
+.selrow select{flex:1;min-width:0;width:100%;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
 .sect{margin:20px 0 8px;font:400 .8rem/1.3 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .updbar{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:60;max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid var(--gold);border-radius:var(--r-in);padding:10px 12px;background:var(--panel);box-shadow:0 8px 28px rgba(0,0,0,.45)}
 .updbar .grow{flex:1 1 200px;min-width:0}
@@ -686,7 +686,7 @@ function viewOggi() {
         </div>
         <div id="tmTime" class="tmtime" role="timer" aria-live="off">--:--</div>
         <label class="sr" for="tmExam">Materia della sessione</label>
-        <div class="selrow"><select id="tmExam" data-field="tm-exam">${examOptions(t.examId, 'Nessuna materia in particolare')}</select><button type="button" class="btn small" data-act="new-subject" aria-label="Aggiungi una nuova materia">+ Nuova</button></div>
+        <div class="selrow"><select id="tmExam" data-field="tm-exam">${examOptions(t.examId, 'Nessuna materia')}</select><button type="button" class="btn small" data-act="new-subject" aria-label="Aggiungi una nuova materia">+ Nuova</button></div>
         <div class="row"><button id="tmToggle" class="btn primary" data-act="tm-toggle">Avvia</button><button class="btn ghost" data-act="tm-reset">Azzera</button></div>
       </div>
     </div>
