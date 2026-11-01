@@ -126,6 +126,13 @@ input::placeholder{color:#7d6e5d}
 .ff-romantico{font-family:"Playfair Display",serif!important}
 
 /* indicatori */
+.selrow{display:flex;gap:8px;align-items:stretch}
+.selrow select{flex:1;min-width:0}
+.sect{margin:20px 0 8px;font:400 .8rem/1.3 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.updbar{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:60;max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid var(--gold);border-radius:var(--r-in);padding:10px 12px;background:var(--panel);box-shadow:0 8px 28px rgba(0,0,0,.45)}
+.updbar .grow{flex:1 1 200px;min-width:0}
+ul.news{text-align:left;margin:6px 0 16px;padding-left:20px}
+ul.news li{margin:0 0 7px}
 .badge{font:400 .7rem/1.4 var(--display);letter-spacing:.06em;border:1px solid var(--gold);color:var(--gold2);padding:2px 11px;border-radius:var(--r-btn);white-space:nowrap}
 .badge.soon{background:var(--blood);color:#f6ead2}
 .badge.past{border-color:var(--line);color:var(--muted)}
@@ -250,6 +257,10 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
   <button data-tab="impostazioni"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.5"/><circle cx="8" cy="17" r="2.5"/></svg>Impostazioni</button>
 </nav>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="updbar" class="updbar" role="status" hidden>
+  <div class="grow"><strong>Nuova versione</strong> · Una novità di Lucerna è pronta.<div class="muted small" id="updNote" hidden>Il timer in corso non si ferma.</div></div>
+  <div class="row"><button type="button" class="btn small primary" data-act="upd-now">Aggiorna ora</button><button type="button" class="btn small ghost" data-act="upd-later">Più tardi</button></div>
+</div>
 
 <dialog id="dlgWelcome" aria-labelledby="wTitle">
   <form id="frmWelcome">
@@ -264,10 +275,12 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 <dialog id="dlgExam" aria-labelledby="exTitle">
   <form id="frmExam">
     <h2 id="exTitle">Nuovo esame</h2>
-    <label for="exName">Materia</label>
-    <input id="exName" name="exName" required maxlength="80" placeholder="Es. Diritto privato">
+    <div id="exSubjRow" hidden><label for="exSubj">Materia</label><select id="exSubj" name="exSubj"></select></div>
+    <div id="exNameRow"><label for="exName" id="exNameLbl">Materia</label>
+    <input id="exName" name="exName" maxlength="80" placeholder="Es. Diritto privato"></div>
     <label for="exDate">Data dell’esame</label>
-    <input id="exDate" name="exDate" type="date" required>
+    <input id="exDate" name="exDate" type="date">
+    <label class="check"><input type="checkbox" id="exNoDate" name="exNoDate"> Data ancora da decidere</label>
     <div class="rowform">
       <div class="grow"><label for="exCfu">CFU</label><input id="exCfu" name="exCfu" type="number" inputmode="numeric" min="0" max="60"></div>
     </div>
@@ -314,6 +327,25 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
     <p class="cardsign" id="cardSign"></p>
     <div id="cardInstall"></div>
     <button type="button" class="btn primary block" id="cardOpen" data-close>Apri il quaderno</button>
+  </div>
+</dialog>
+
+<dialog id="dlgSubject" aria-labelledby="sbTitle">
+  <form id="frmSubject">
+    <h2 id="sbTitle">Nuova materia</h2>
+    <label for="sbName">Nome della materia</label>
+    <input id="sbName" name="sbName" required maxlength="80" placeholder="Es. Diritto privato">
+    <p class="muted small">La data dell’esame potrai aggiungerla dopo, dalla scheda «Esami».</p>
+    <div class="actions"><button type="button" class="btn ghost" data-close>Annulla</button><button type="button" class="btn primary" data-ok>Aggiungi</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlgNews" aria-labelledby="newsH">
+  <div class="cardbox">
+    <h2 id="newsH">Novità di Lucerna</h2>
+    <p class="cardhello" id="newsVer"></p>
+    <ul class="news" id="newsList"></ul>
+    <button type="button" class="btn primary block" data-close>Continua</button>
   </div>
 </dialog>
 
@@ -394,9 +426,23 @@ const MAXIMS = [
   ['Festina lente', 'Affrettati lentamente.']
 ];
 
+/* ---------- versione e novità ---------- */
+const BUILD = 'lucerna-v11';   // deve coincidere con BUILD in sw.js
+const NEWS_BASE = '1.0';
+const NEWS = [
+  { v: '1.1', items: [
+    'Le materie possono esistere anche senza una data d’esame: la fissi quando la conosci.',
+    'Dalla clessidra, il pulsante «+ Nuova» aggiunge una materia al volo.',
+    'Quando c’è una nuova versione, Lucerna te lo dice con un avviso e un suono leggero.',
+    'In Impostazioni trovi l’interruttore «Suoni».',
+    'Dopo ogni aggiornamento, un biglietto come questo elenca le novità.'
+  ] }
+];
+const verCmp = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
+
 /* ---------- stato e salvataggio ---------- */
 const DEF = () => ({
-  v: 1, name: '', welcomed: false, tab: 'oggi', font: 'elegante', btn: 'round', theme: 'night', keepAwake: true, cardSeen: false, installDismissed: false,
+  v: 1, name: '', welcomed: false, tab: 'oggi', font: 'elegante', btn: 'round', theme: 'night', keepAwake: true, sound: true, lastNews: NEWS_BASE, cardSeen: false, installDismissed: false,
   weeklyGoalMin: 720, focusMin: 25, breakMin: 5,
   exams: [], sessions: [], plan: [], events: [],
   timer: { mode: 'focus', running: false, endsAt: null, remainingMs: null, examId: '' }
@@ -411,7 +457,9 @@ function normalize(p) {
   if (!['elegante', 'antico', 'romantico'].includes(s.font)) s.font = 'elegante';
   if (!['round', 'classic'].includes(s.btn)) s.btn = 'round';
   if (!['night', 'paper', 'light'].includes(s.theme)) s.theme = 'night';
-  s.keepAwake = s.keepAwake !== false;
+  s.keepAwake = s.keepAwake !== false; s.sound = s.sound !== false;
+  if (typeof s.lastNews !== 'string' || !/^\d+(\.\d+)*$/.test(s.lastNews)) s.lastNews = NEWS_BASE;
+  s.exams = s.exams.filter(e => e && typeof e.name === 'string' && e.id); s.exams.forEach(e => { if (typeof e.date !== 'string') e.date = ''; });
   s.cardSeen = !!s.cardSeen; s.installDismissed = !!s.installDismissed;
   return s;
 }
@@ -434,10 +482,12 @@ S.tab = 'oggi';   // all'apertura si riparte sempre dalla schermata Oggi
 S.plan = S.plan.filter(p => daysBetween(parseYMD(p.date), new Date()) <= 14);
 
 /* ---------- dati derivati ---------- */
-const activeExams = () => S.exams.filter(e => !e.done).sort((a, b) => a.date.localeCompare(b.date));
+const datedExams = () => S.exams.filter(e => !e.done && e.date).sort((a, b) => a.date.localeCompare(b.date));
+const undatedExams = () => S.exams.filter(e => !e.done && !e.date).sort((a, b) => a.name.localeCompare(b.name, 'it'));
+const activeExams = () => datedExams().concat(undatedExams());
 const examById = id => S.exams.find(e => e.id === id);
 const examName = id => (examById(id) || {}).name || '';
-function nextExam() { const t = sod(new Date()); return activeExams().find(e => parseYMD(e.date) >= t) || null; }
+function nextExam() { const t = sod(new Date()); return datedExams().find(e => parseYMD(e.date) >= t) || null; }
 function examOptions(sel, none) {
   return (none ? `<option value="">${none}</option>` : '') +
     activeExams().map(e => `<option value="${e.id}" ${e.id === sel ? 'selected' : ''}>${esc(e.name)}</option>`).join('');
@@ -454,6 +504,7 @@ function weekMinutes() {
 }
 function inDays(n) { return n === 0 ? 'oggi' : n === 1 ? 'domani' : `tra ${n} giorni`; }
 function badge(e) {
+  if (!e.date) return '<span class="badge">data da fissare</span>';
   const n = daysBetween(new Date(), parseYMD(e.date));
   let t, c = '';
   if (n >= 0) { t = inDays(n); if (n <= 7) c = 'soon'; }
@@ -478,18 +529,19 @@ function ensureAudio() {
   try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) {}
 }
 // Rintocco di campana: una nota con sovratoni inarmonici che si spengono a velocità diverse.
-function bell(f, t0) {
-  [[1, .5, 3.2], [2, .28, 2.2], [2.41, .16, 1.6], [3, .1, 1.2], [4.2, .05, .8]].forEach(([r, a, d]) => {
+function bell(f, t0, vol = 1, len = 1) {
+  [[1, .5, 3.2], [2, .28, 2.2], [2.41, .16, 1.6], [3, .1, 1.2], [4.2, .05, .8]].forEach(([r, a, d0]) => {
+    const d = d0 * len;
     const o = actx.createOscillator(), g = actx.createGain();
     o.type = 'sine'; o.frequency.value = f * r;
-    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(a * 0.3, t0 + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(a * 0.3 * vol, t0 + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
     o.connect(g); g.connect(actx.destination); o.start(t0); o.stop(t0 + d + 0.05);
   });
 }
-function chime(strikes) {
+function chime(strikes, force) {
   // Senza un tocco recente il browser blocca suono e vibrazione: in quel caso non li tenta nemmeno.
   if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
-  try {
+  if (force || S.sound) try {
     ensureAudio(); if (!actx) return;
     const t0 = actx.currentTime + 0.05;
     bell(440, t0); if (strikes > 1) bell(330, t0 + 1.1);
@@ -634,7 +686,7 @@ function viewOggi() {
         </div>
         <div id="tmTime" class="tmtime" role="timer" aria-live="off">--:--</div>
         <label class="sr" for="tmExam">Materia della sessione</label>
-        <select id="tmExam" data-field="tm-exam">${examOptions(t.examId, 'Nessuna materia in particolare')}</select>
+        <div class="selrow"><select id="tmExam" data-field="tm-exam">${examOptions(t.examId, 'Nessuna materia in particolare')}</select><button type="button" class="btn small" data-act="new-subject" aria-label="Aggiungi una nuova materia">+ Nuova</button></div>
         <div class="row"><button id="tmToggle" class="btn primary" data-act="tm-toggle">Avvia</button><button class="btn ghost" data-act="tm-reset">Azzera</button></div>
       </div>
     </div>
@@ -676,7 +728,7 @@ function viewOggi() {
 function pagesBlock(e) {
   if (!(e.pagesTotal > 0)) return '';
   const read = Math.min(e.pagesRead || 0, e.pagesTotal), pct = Math.round(read / e.pagesTotal * 100), rem = e.pagesTotal - read;
-  const dl = daysBetween(new Date(), parseYMD(e.date));
+  const dl = e.date ? daysBetween(new Date(), parseYMD(e.date)) : 0;
   const pace = rem === 0 ? 'Programma completato: ora ripassa.' : dl > 0 ? `Ritmo necessario: circa ${Math.ceil(rem / dl)} pagine al giorno.` : `Mancano ${rem} pagine.`;
   return `<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${e.pagesTotal}" aria-valuenow="${read}" aria-label="Pagine lette"><i style="width:${pct}%"></i></div>
     <p class="small">Pagina ${read} di ${e.pagesTotal} (${pct}%) · <span class="muted">${pace}</span></p>
@@ -685,24 +737,30 @@ function pagesBlock(e) {
 }
 function examCard(e) {
   const mins = S.sessions.filter(s => s.examId === e.id).reduce((a, s) => a + s.min, 0);
+  const extra = `${e.cfu ? ` · ${e.cfu} CFU` : ''}${mins ? ` · ${fmtMin(mins)} di studio` : ''}`;
+  const when = e.date ? esc(fmtDate.format(parseYMD(e.date))) + extra : (extra ? extra.slice(3) : 'Nessuna data per ora');
   return `<article class="card">
     <div class="examhead"><h3>${esc(e.name)}</h3>${badge(e)}</div>
-    <p class="muted small">${esc(fmtDate.format(parseYMD(e.date)))}${e.cfu ? ` · ${e.cfu} CFU` : ''}${mins ? ` · ${fmtMin(mins)} di studio` : ''}</p>
+    <p class="muted small">${when}</p>
     ${pagesBlock(e)}
     <div class="actions">
-      <button class="btn small" data-act="edit-exam" data-id="${e.id}">Modifica</button>
-      <button class="btn small primary" data-act="done-exam" data-id="${e.id}">Superato</button>
+      ${e.date ? `<button class="btn small" data-act="edit-exam" data-id="${e.id}">Modifica</button>
+      <button class="btn small primary" data-act="done-exam" data-id="${e.id}">Superato</button>`
+      : `<button class="btn small primary" data-act="edit-exam" data-id="${e.id}">Fissa la data</button>
+      <button class="btn small" data-act="edit-exam" data-id="${e.id}">Modifica</button>`}
       <button class="btn small danger" data-act="del-exam" data-id="${e.id}">Elimina</button>
     </div></article>`;
 }
 function viewEsami() {
-  const act = activeExams(), done = S.exams.filter(e => e.done).sort((a, b) => b.date.localeCompare(a.date));
+  const dated = datedExams(), und = undatedExams(), done = S.exams.filter(e => e.done).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   return `<h2 class="plain">I tuoi esami</h2>
     <p><button class="btn primary block" data-act="add-exam">+ Nuovo esame</button></p>
-    ${act.length ? act.map(examCard).join('') : '<article class="card"><p class="muted">Nessun esame in programma. Aggiungine uno per far partire il conto alla rovescia.</p></article>'}
+    ${dated.length || und.length ? '' : '<article class="card"><p class="muted">Nessun esame in programma. Aggiungine uno per far partire il conto alla rovescia, oppure una materia anche senza data.</p></article>'}
+    ${dated.length ? `<h3 class="sect">In programma</h3>${dated.map(examCard).join('')}` : ''}
+    ${und.length ? `<h3 class="sect">Senza data</h3>${und.map(examCard).join('')}` : ''}
     ${done.length ? `<details class="plainlist"><summary>Esami superati (${done.length})</summary>
       ${done.map(e => `<article class="card"><div class="examhead"><h3>${esc(e.name)}</h3>${e.grade ? `<span class="badge">${esc(e.grade)}</span>` : ''}</div>
-        <p class="muted small">${esc(fmtDate.format(parseYMD(e.date)))}${e.cfu ? ` · ${e.cfu} CFU` : ''}</p>
+        <p class="muted small">${e.date ? esc(fmtDate.format(parseYMD(e.date))) : ''}${e.cfu ? `${e.date ? ' · ' : ''}${e.cfu} CFU` : ''}</p>
         <div class="actions"><button class="btn small ghost" data-act="reopen-exam" data-id="${e.id}">Riapri</button><button class="btn small danger" data-act="del-exam" data-id="${e.id}">Elimina</button></div></article>`).join('')}
     </details>` : ''}`;
 }
@@ -744,6 +802,9 @@ function viewImpostazioni() {
     <label>Schermo acceso durante la sessione</label>
     ${seg('set-awake', S.keepAwake ? 'on' : 'off', [['on', 'Sì'], ['off', 'No']])}
     <p class="muted small">${'wakeLock' in navigator ? 'Evita che il telefono si blocchi mentre il timer corre, così il rintocco si sente sempre. Consuma un po’ più di batteria.' : 'Questo browser non supporta la funzione: il telefono si bloccherà come al solito.'}</p>
+    <label>Suoni</label>
+    ${seg('set-sound', S.sound ? 'on' : 'off', [['on', 'Sì'], ['off', 'No']])}
+    <p class="muted small">Il rintocco a fine sessione e il suono leggero dell’avviso di aggiornamento. La vibrazione resta.</p>
     <div class="actions"><button class="btn small" data-act="test-chime">Ascolta il rintocco</button></div>
   </article>
   <article class="card">
@@ -765,6 +826,11 @@ function viewImpostazioni() {
     <p class="muted small">Per avere l’icona nella schermata Home: apri Lucerna con Chrome, tocca il menu ⋮ e scegli «Installa app».</p>
     ${installEvt ? '<div class="actions"><button class="btn small primary" data-act="install">Installa ora</button></div>' : ''}
   </article>`}
+  <article class="card">
+    <h2>Informazioni</h2>
+    <p class="muted small">Lucerna, versione ${NEWS[0].v}</p>
+    <div class="actions"><button class="btn small" data-act="show-news">Rivedi le novità</button><button class="btn small" data-act="check-update">Controlla aggiornamenti</button></div>
+  </article>
   <article class="card">
     <h2>I tuoi dati</h2>
     <p class="muted small">I dati restano soltanto su questo dispositivo. Salva una copia ogni tanto: se cambi telefono potrai ripristinarla.</p>
@@ -923,13 +989,27 @@ function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
+function syncExForm() {
+  const f = $('#frmExam').elements, editing = !!$('#frmExam').dataset.id, pick = !editing && !$('#exSubjRow').hidden;
+  const isNew = !pick || f.exSubj.value === '__new';
+  $('#exNameRow').hidden = !isNew;
+  $('#exNameLbl').textContent = pick ? 'Nome della nuova materia' : 'Materia';
+  f.exDate.disabled = f.exNoDate.checked;
+  if (f.exNoDate.checked) f.exDate.value = '';
+}
 function openExam(id) {
   const e = id ? examById(id) : null, f = $('#frmExam').elements;
   $('#frmExam').dataset.id = id || '';
-  $('#exTitle').textContent = e ? 'Modifica esame' : 'Nuovo esame';
+  $('#exTitle').textContent = e ? (e.date ? 'Modifica esame' : 'Modifica materia') : 'Nuovo esame';
+  const und = e ? [] : undatedExams();
+  $('#exSubjRow').hidden = !und.length;
+  f.exSubj.innerHTML = und.map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join('') + '<option value="__new">+ Nuova materia…</option>';
+  f.exSubj.value = '__new';
   f.exName.value = e ? e.name : ''; f.exDate.value = e ? e.date : '';
+  f.exNoDate.checked = !!(e && !e.date);
   f.exCfu.value = e && e.cfu ? e.cfu : ''; f.exTotal.value = e && e.pagesTotal ? e.pagesTotal : ''; f.exRead.value = e && e.pagesRead ? e.pagesRead : '';
   f.exTrack.checked = !!(e && e.pagesTotal > 0); $('#exPages').hidden = !f.exTrack.checked;
+  syncExForm();
   $('#dlgExam').showModal();
 }
 function openPlan(date) {
@@ -964,13 +1044,26 @@ wireForm($('#frmWelcome'), () => {
   S.welcomed = true; save(); $('#dlgWelcome').close(); render();
 });
 $('#dlgWelcome').addEventListener('close', () => { if (!S.welcomed) { S.welcomed = true; save(); } });
+wireForm($('#frmSubject'), form => {
+  const name = form.elements.sbName.value.trim().slice(0, 80); if (!name) return;
+  const ex = S.exams.find(e => !e.done && e.name.toLowerCase() === name.toLowerCase());
+  let id, msg;
+  if (ex) { id = ex.id; msg = 'La materia c’è già: l’ho selezionata.'; }
+  else { id = uid(); S.exams.push({ id, name, date: '', cfu: 0, pagesTotal: 0, pagesRead: 0, done: false, grade: '' }); msg = 'Materia aggiunta.'; }
+  T().examId = id; $('#dlgSubject').close(); save(); render(); toast(msg);
+});
 wireForm($('#frmExam'), form => {
   const f = form.elements, id = form.dataset.id;
   const tr = f.exTrack.checked;
   const total = tr ? Math.max(0, Math.round(num(f.exTotal.value))) : 0, read = tr ? clamp(Math.round(num(f.exRead.value)), 0, total || 0) : 0;
-  const data = { name: f.exName.value.trim().slice(0, 80), date: f.exDate.value, cfu: Math.max(0, Math.round(num(f.exCfu.value))) || 0, pagesTotal: total, pagesRead: read };
-  if (!data.name || !data.date) return;
+  const noDate = f.exNoDate.checked;
+  const data = { name: f.exName.value.trim().slice(0, 80), date: noDate ? '' : f.exDate.value, cfu: Math.max(0, Math.round(num(f.exCfu.value))) || 0, pagesTotal: total, pagesRead: read };
+  const pick = !id && !$('#exSubjRow').hidden && f.exSubj.value !== '__new' ? examById(f.exSubj.value) : null;
+  if (pick) data.name = pick.name;
+  if (!data.name) { toast('Scrivi il nome della materia.'); return; }
+  if (!noDate && !data.date) { toast('Indica la data oppure spunta «Data ancora da decidere».'); return; }
   if (id && examById(id)) Object.assign(examById(id), data);
+  else if (pick) Object.assign(pick, data);
   else S.exams.push(Object.assign({ id: uid(), done: false, grade: '' }, data));
   $('#dlgExam').close(); save(); render(); toast('Esame salvato.');
 });
@@ -1010,6 +1103,11 @@ document.addEventListener('click', ev => {
     case 'tm-reset': timerReset(); updateTimerUI(); break;
     case 'tm-mode': if (T().mode !== b.dataset.mode) { T().mode = b.dataset.mode; timerReset(); render(); } break;
     case 'add-exam': openExam(); break;
+    case 'new-subject': $('#frmSubject').elements.sbName.value = ''; $('#dlgSubject').showModal(); break;
+    case 'show-news': showNews(true); break;
+    case 'check-update': checkUpdates(true); break;
+    case 'upd-now': applyUpdate(); break;
+    case 'upd-later': updDismissed = true; $('#updbar').hidden = true; break;
     case 'edit-exam': openExam(id); break;
     case 'del-exam':
       askConfirm('Eliminare questo esame? Le ore di studio già registrate restano nel conto della settimana.', 'Elimina', true).then(yes => {
@@ -1067,17 +1165,19 @@ document.addEventListener('click', ev => {
     }
     case 'set-awake': S.keepAwake = b.dataset.v === 'on'; save(); syncWake(); render(); break;
     case 'set-theme': S.theme = b.dataset.v; save(); render(); break;
-    case 'test-chime': ensureAudio(); chime(2); break;
+    case 'test-chime': ensureAudio(); chime(2, true); break;
+    case 'set-sound': S.sound = b.dataset.v === 'on'; save(); render(); break;
     case 'set-btn': S.btn = b.dataset.v; save(); render(); break;
     case 'reset-all':
       askConfirm('Cancellare tutti i dati di questo quaderno? L’operazione non si può annullare.', 'Cancella tutto', true).then(yes => {
-        if (yes) { S = DEF(); S.welcomed = true; S.tab = 'impostazioni'; save(); render(); toast('Quaderno azzerato.'); }
+        if (yes) { S = DEF(); S.welcomed = true; S.lastNews = NEWS[0].v; S.tab = 'impostazioni'; save(); render(); toast('Quaderno azzerato.'); }
       }); break;
   }
 });
 document.addEventListener('change', ev => {
   const t = ev.target;
   if (t.id === 'exTrack') { $('#exPages').hidden = !t.checked; return; }
+  if (t.id === 'exNoDate' || t.id === 'exSubj') { syncExForm(); return; }
   if (t.matches('[data-field="tm-exam"]')) { T().examId = t.value; save(); return; }
   if (t.matches('[data-act="toggle-plan"]')) {
     const p = S.plan.find(x => x.id === t.dataset.id); if (!p) return;
@@ -1114,8 +1214,75 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) tick
 render();
 tick();
 setInterval(tick, 250);
-if (!S.cardSeen) showCard(); else if (!S.welcomed) $('#dlgWelcome').showModal();
-try { if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
+/* ---------- novità ---------- */
+function showNews(all) {
+  const list = all ? NEWS.slice(0, 1) : NEWS.filter(n => verCmp(n.v, S.lastNews) > 0);
+  if (!list.length || $('dialog[open]')) return;
+  $('#newsVer').textContent = `Versione ${NEWS[0].v}`;
+  $('#newsList').innerHTML = list.map(n => n.items.map(t => `<li>${esc(t)}</li>`).join('')).join('');
+  $('#dlgNews').showModal();
+}
+$('#dlgNews').addEventListener('close', () => { if (S.lastNews !== NEWS[0].v) { S.lastNews = NEWS[0].v; save(); } });
+
+/* ---------- aggiornamenti ---------- */
+let swReg = null, updating = false, offered = false, updDismissed = false, lastCheck = 0;
+function updTone() {
+  if (!S.sound || (navigator.userActivation && !navigator.userActivation.hasBeenActive)) return;
+  try { ensureAudio(); if (!actx) return; const t0 = actx.currentTime + 0.05; bell(587.33, t0, .55, .4); bell(783.99, t0 + .28, .55, .5); } catch (e) {}
+}
+function offerUpdate() {
+  if (updDismissed) return;
+  $('#updNote').hidden = !T().running;
+  $('#updbar').hidden = false;
+  if (!offered) { offered = true; updTone(); }
+}
+function askBuild(w) {
+  return new Promise(res => {
+    const ch = new MessageChannel(), to = setTimeout(() => res(null), 2000);
+    ch.port1.onmessage = ev => { clearTimeout(to); res(ev.data && ev.data.build); };
+    try { w.postMessage({ type: 'GET_BUILD' }, [ch.port2]); } catch (e) { clearTimeout(to); res(null); }
+  });
+}
+async function handleWaiting(reg) {
+  const w = reg && reg.waiting; if (!w) return;
+  const b = await askBuild(w);
+  if (b === BUILD) { try { w.postMessage({ type: 'SKIP_WAITING' }); } catch (e) {} return; }   // la pagina è già quella nuova
+  offerUpdate();
+}
+function applyUpdate() {
+  const w = swReg && swReg.waiting; if (!w) { location.reload(); return; }
+  updating = true; save();
+  try { w.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { location.reload(); return; }
+  setTimeout(() => location.reload(), 4000);
+}
+function checkUpdates(manual) {
+  if (manual) updDismissed = false;
+  if (!swReg) { if (manual) toast('Gli aggiornamenti funzionano solo con l’app installata o aperta dal sito.'); return; }
+  if (!navigator.onLine) { if (manual) toast('Serve una connessione a internet.'); return; }
+  lastCheck = Date.now();
+  swReg.update().then(() => {
+    if (swReg.waiting) handleWaiting(swReg);
+    else if (manual && !swReg.installing) toast('Lucerna è già aggiornata.');
+  }).catch(() => { if (manual) toast('Non riesco a controllare ora.'); });
+}
+try {
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      swReg = reg; handleWaiting(reg);
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing; if (!nw) return;
+        nw.addEventListener('statechange', () => { if (nw.state === 'installed' && navigator.serviceWorker.controller) handleWaiting(reg); });
+      });
+    }).catch(() => {});
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (updating) location.reload(); });
+    setInterval(() => checkUpdates(false), 30 * 60000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastCheck > 10 * 60000) checkUpdates(false); });
+  }
+} catch (e) {}
+
+const freshInstall = !S.cardSeen && !S.welcomed;
+if (freshInstall) { S.lastNews = NEWS[0].v; save(); }
+if (!S.cardSeen) showCard(); else if (!S.welcomed) $('#dlgWelcome').showModal(); else showNews(false);
 })();
 </script>
 </body>
