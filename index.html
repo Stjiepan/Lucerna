@@ -126,6 +126,9 @@ input::placeholder{color:#7d6e5d}
 .ff-romantico{font-family:"Playfair Display",serif!important}
 
 /* indicatori */
+.sessrow{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line)}
+ul.sess{list-style:none;margin:0;padding:0}
+.sessrow .actions{margin:0}
 .selrow{display:flex;gap:8px;align-items:stretch}
 .selrow select{flex:1;min-width:0;width:100%;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
 .sect{margin:20px 0 8px;font:400 .8rem/1.3 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
@@ -330,6 +333,18 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
   </div>
 </dialog>
 
+<dialog id="dlgSess" aria-labelledby="ssTitle">
+  <form id="frmSess">
+    <h2 id="ssTitle">Modifica sessione</h2>
+    <div class="rowform">
+      <div class="narrow"><label for="ssMin">Minuti</label><input id="ssMin" name="ssMin" type="number" inputmode="numeric" min="1" max="600" required></div>
+      <div class="grow"><label for="ssDay">Giorno</label><input id="ssDay" name="ssDay" type="date" required></div>
+    </div>
+    <label for="ssEx">Materia</label><select id="ssEx" name="ssEx"></select>
+    <div class="actions"><button type="button" class="btn ghost" data-close>Annulla</button><button type="button" class="btn primary" data-ok>Salva</button></div>
+  </form>
+</dialog>
+
 <dialog id="dlgSubject" aria-labelledby="sbTitle">
   <form id="frmSubject">
     <h2 id="sbTitle">Nuova materia</h2>
@@ -427,9 +442,17 @@ const MAXIMS = [
 ];
 
 /* ---------- versione e novità ---------- */
-const BUILD = 'lucerna-v11';   // deve coincidere con BUILD in sw.js
+const BUILD = 'lucerna-v14';   // deve coincidere con BUILD in sw.js
 const NEWS_BASE = '1.0';
 const NEWS = [
+  { v: '1.3', items: [
+    'Le sessioni registrate si possono correggere o eliminare: le trovi in Agenda, sotto «Ore di studio».',
+    'Se Lucerna è aperta in due posti (app e browser), i dati restano allineati e non si sovrascrivono.'
+  ] },
+  { v: '1.2', items: [
+    'Nel registro rapido puoi scegliere il giorno: così lo studio di ieri finisce sul giorno giusto.',
+    'Se il timer finisce mentre l’app è chiusa, la sessione viene segnata all’ora in cui è finita davvero.'
+  ] },
   { v: '1.1', items: [
     'Le materie possono esistere anche senza una data d’esame: la fissi quando la conosci.',
     'Dalla clessidra, il pulsante «+ Nuova» aggiunge una materia al volo.',
@@ -564,7 +587,7 @@ function timerPause() { const t = T(); if (!t.running) return; t.remainingMs = r
 function timerReset() { const t = T(); t.running = false; t.endsAt = null; t.remainingMs = null; save(); syncWake(); }
 function timerFinish() {
   const t = T(), wasFocus = t.mode === 'focus';
-  if (wasFocus) S.sessions.push({ id: uid(), ts: Date.now(), min: S.focusMin, examId: t.examId || null });
+  if (wasFocus) S.sessions.push({ id: uid(), ts: Math.min(Date.now(), t.endsAt || Date.now()), min: S.focusMin, examId: t.examId || null });   // se l'app era chiusa, vale l'ora in cui la sessione è davvero finita
   t.mode = wasFocus ? 'break' : 'focus'; t.running = false; t.endsAt = null; t.remainingMs = null;
   save(); chime(wasFocus ? 2 : 1); syncWake();
   toast(wasFocus ? `Sessione completata: ${fmtMin(S.focusMin)} registrati. Concediti una pausa.` : 'Pausa finita: quando vuoi si riparte.');
@@ -696,6 +719,7 @@ function viewOggi() {
     <div class="rowform">
       <div class="narrow"><label for="qlMin">Minuti</label><input id="qlMin" type="number" inputmode="numeric" min="1" max="600" placeholder="45"></div>
       <div class="grow"><label for="qlEx">Materia</label><select id="qlEx">${examOptions('', 'Nessuna')}</select></div>
+      <div class="grow"><label for="qlDay">Giorno</label><input id="qlDay" type="date" value="${ymd(new Date())}" max="${ymd(new Date())}"></div>
       <button class="btn block" data-act="log-manual">Registra</button>
     </div>
   </article>
@@ -764,6 +788,16 @@ function viewEsami() {
         <div class="actions"><button class="btn small ghost" data-act="reopen-exam" data-id="${e.id}">Riapri</button><button class="btn small danger" data-act="del-exam" data-id="${e.id}">Elimina</button></div></article>`).join('')}
     </details>` : ''}`;
 }
+function sessionsCard() {
+  const from = addDays(new Date(), -14).getTime();
+  const list = S.sessions.filter(x => x.ts >= from).sort((a, b) => b.ts - a.ts).slice(0, 40);
+  const fmt = new Intl.DateTimeFormat('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+  return `<article class="card"><h2>Sessioni registrate</h2>
+    ${list.length ? `<ul class="sess">${list.map(x => `<li class="sessrow"><div><strong>${fmtMin(x.min)}</strong> · ${esc(examName(x.examId) || 'Nessuna materia')}<div class="muted small">${esc(cap(fmt.format(new Date(x.ts))))}</div></div>
+      <div class="actions"><button class="btn small" data-act="edit-sess" data-id="${x.id}">Modifica</button><button class="btn small danger" data-act="del-sess" data-id="${x.id}">Elimina</button></div></li>`).join('')}</ul>`
+    : '<p class="muted small">Nessuna sessione negli ultimi 14 giorni.</p>'}
+  </article>`;
+}
 function viewSettimana() {
   const now = new Date(), mon = monday(now), mins = weekMinutes(), total = mins.reduce((a, b) => a + b, 0);
   const maxv = Math.max(60, ...mins), todayIdx = (now.getDay() + 6) % 7, names = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
@@ -780,6 +814,7 @@ function viewSettimana() {
     <div class="chart" role="img" aria-label="Minuti di studio per giorno, totale ${fmtMin(total)}">${cols}</div>
     <p style="margin-top:14px"><strong>${fmtMin(total)}</strong> <span class="muted">su ${fmtMin(S.weeklyGoalMin)} di limite settimanale.</span></p>
   </article>
+  ${sessionsCard()}
   <article class="card">
     <h2>Programma</h2>${days}
     <div class="actions"><button class="btn small" data-act="add-plan" data-date="${ymd(now)}">+ Aggiungi sessione</button></div>
@@ -1044,6 +1079,15 @@ wireForm($('#frmWelcome'), () => {
   S.welcomed = true; save(); $('#dlgWelcome').close(); render();
 });
 $('#dlgWelcome').addEventListener('close', () => { if (!S.welcomed) { S.welcomed = true; save(); } });
+wireForm($('#frmSess'), form => {
+  const f = form.elements, x = S.sessions.find(q => q.id === form.dataset.id); if (!x) { $('#dlgSess').close(); return; }
+  const m = Math.round(num(f.ssMin.value)); if (m < 1 || m > 600) { toast('Indica i minuti (da 1 a 600).'); return; }
+  const dv = f.ssDay.value, today = ymd(new Date());
+  if (!dv || dv > today) { toast('Scegli un giorno valido, non nel futuro.'); return; }
+  if (dv !== ymd(new Date(x.ts))) { const d = parseYMD(dv); if (dv === today) { const n = new Date(); d.setHours(n.getHours(), n.getMinutes()); } else d.setHours(20, 0, 0, 0); x.ts = d.getTime(); }
+  x.min = m; x.examId = f.ssEx.value || null;
+  $('#dlgSess').close(); save(); render(); toast('Sessione aggiornata.');
+});
 wireForm($('#frmSubject'), form => {
   const name = form.elements.sbName.value.trim().slice(0, 80); if (!name) return;
   const ex = S.exams.find(e => !e.done && e.name.toLowerCase() === name.toLowerCase());
@@ -1103,6 +1147,20 @@ document.addEventListener('click', ev => {
     case 'tm-reset': timerReset(); updateTimerUI(); break;
     case 'tm-mode': if (T().mode !== b.dataset.mode) { T().mode = b.dataset.mode; timerReset(); render(); } break;
     case 'add-exam': openExam(); break;
+    case 'edit-sess': {
+      const x = S.sessions.find(q => q.id === id); if (!x) break;
+      const f = $('#frmSess').elements; $('#frmSess').dataset.id = id;
+      f.ssMin.value = x.min; f.ssDay.value = ymd(new Date(x.ts)); f.ssDay.max = ymd(new Date());
+      f.ssEx.innerHTML = '<option value="">Nessuna</option>' + S.exams.filter(e => !e.done || e.id === x.examId).map(e => `<option value="${e.id}" ${e.id === x.examId ? 'selected' : ''}>${esc(e.name)}</option>`).join('');
+      $('#dlgSess').showModal(); break;
+    }
+    case 'del-sess':
+      askConfirm('Eliminare questa sessione registrata?', 'Elimina', true).then(yes => {
+        if (!yes) return;
+        const x = S.sessions.find(q => q.id === id);
+        if (x && x.planId) { const pl = S.plan.find(q => q.id === x.planId); if (pl) pl.done = false; }
+        S.sessions = S.sessions.filter(q => q.id !== id); save(); render(); toast('Sessione eliminata.');
+      }); break;
     case 'new-subject': $('#frmSubject').elements.sbName.value = ''; $('#dlgSubject').showModal(); break;
     case 'show-news': showNews(true); break;
     case 'check-update': checkUpdates(true); break;
@@ -1129,7 +1187,11 @@ document.addEventListener('click', ev => {
     case 'del-plan': S.plan = S.plan.filter(p => p.id !== id); S.sessions = S.sessions.filter(s => s.planId !== id); save(); render(); break;
     case 'log-manual': {
       const m = Math.round(num($('#qlMin').value)); if (m < 1 || m > 600) { toast('Indica i minuti (da 1 a 600).'); break; }
-      S.sessions.push({ id: uid(), ts: Date.now(), min: m, examId: $('#qlEx').value || null }); save(); render(); toast(`${fmtMin(m)} registrati.`); break;
+      const dv = $('#qlDay').value, today = ymd(new Date());
+      if (dv && dv > today) { toast('Il giorno non può essere nel futuro.'); break; }
+      let ts = Date.now(); if (dv && dv < today) { const d = parseYMD(dv); d.setHours(20, 0, 0, 0); ts = d.getTime(); }
+      S.sessions.push({ id: uid(), ts, min: m, examId: $('#qlEx').value || null }); save(); render();
+      toast(dv && dv < today ? `${fmtMin(m)} registrati il ${fmtDate.format(parseYMD(dv))}.` : `${fmtMin(m)} registrati.`); break;
     }
     case 'export': {
       const a = document.createElement('a');
@@ -1208,7 +1270,16 @@ document.addEventListener('change', ev => {
     r.readAsText(t.files[0]); t.value = '';
   }
 });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); syncWake(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { syncFromStorage(); tick(); } syncWake(); });
+// Se Lucerna è aperta in due posti (app e browser) i dati dell'altra copia arrivano qui, senza sovrascriverli al prossimo salvataggio.
+function syncFromStorage() {
+  try {
+    const raw = localStorage.getItem(KEY); if (!raw) return;
+    const o = JSON.parse(raw); o.tab = S.tab; if (JSON.stringify(o) === JSON.stringify(S)) return;
+    const theirs = normalize(o); theirs.tab = S.tab; S = theirs; render();
+  } catch (e) {}
+}
+window.addEventListener('storage', ev => { if (ev.key === KEY && ev.newValue) syncFromStorage(); });
 
 /* ---------- avvio ---------- */
 render();
