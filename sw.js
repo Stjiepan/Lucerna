@@ -1,7 +1,7 @@
 /* Service worker: l'app funziona anche offline.
    Per rilasciare una nuova versione cambia BUILD qui e in index.html (stesso valore).
    Il nuovo worker resta "in attesa": è la pagina a chiedere all'utente se aggiornare subito. */
-const BUILD = 'lucerna-v14';
+const BUILD = 'lucerna-v15';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
